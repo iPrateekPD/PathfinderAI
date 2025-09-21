@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Risk Analysis System</title>
+    <style>
+      /* ... (all CSS is unchanged) ... */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root {
+        --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #818cf8; --secondary: #8b5cf6;
+        --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark: #0f172a;
+        --dark-lighter: #1e293b; --dark-light: #334155; --gray: #64748b; --gray-light: #94a3b8;
+        --gray-lighter: #cbd5e1; --white: #ffffff; --glass: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1); --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --shadow: 0 10px 25px rgba(0, 0, 0, 0.15); --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.25);
+        --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3); --radius: 12px; --radius-lg: 20px;
+        --radius-xl: 24px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      [data-theme="light"] {
+        --dark: #ffffff; --dark-lighter: #f8fafc; --dark-light: #e2e8f0; --gray: #64748b;
+        --gray-light: #475569; --gray-lighter: #334155; --white: #0f172a;
+        --glass: rgba(0, 0, 0, 0.05); --glass-border: rgba(0, 0, 0, 0.1);
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05); --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.15);
+      }
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, var(--dark) 0%, var(--dark-lighter) 100%);
+        color: var(--white); min-height: 100vh; overflow-x: hidden; position: relative;
+        font-size: 15px; line-height: 1.6; transition: var(--transition);
+      }
+      body::before {
+        content: ""; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 60%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+        z-index: -2; animation: backgroundShift 20s ease-in-out infinite;
+      }
+      @keyframes backgroundShift { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(-20px, -20px) scale(1.1); } 66% { transform: translate(20px, -10px) scale(0.95); } }
+      .container { max-width: 1440px; margin: 0 auto; padding: 24px; animation: fadeInUp 0.6s ease-out; }
+      @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+      .header { background: var(--glass); backdrop-filter: blur(20px) saturate(180%); border-radius: var(--radius-xl); border: 1px solid var(--glass-border); padding: 20px 32px; margin-bottom: 32px; box-shadow: var(--shadow); transition: var(--transition); position: relative; overflow: hidden; }
+      .header-content { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+      .logo { font-size: 24px; font-weight: 900; background: linear-gradient(135deg, var(--primary-light), var(--secondary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
+      .logo::before { content: "🎯"; font-size: 28px; filter: brightness(1.2); }
+      .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+      .nav-item { padding: 10px 20px; background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: var(--radius); cursor: pointer; transition: var(--transition); font-weight: 500; font-size: 14px; position: relative; overflow: hidden; white-space: nowrap; }
+      .nav-item:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); transform: translateY(-2px); box-shadow: var(--shadow); }
+      .nav-item.active { background: linear-gradient(135deg, var(--primary), var(--secondary)); border-color: transparent; box-shadow: var(--shadow-glow); transform: translateY(-2px); }
+      .theme-toggle { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 8px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--white); transition: var(--transition); margin-left: auto; }
+      .theme-toggle:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); transform: translateY(-2px); }
+      .theme-toggle::before { content: "🌙"; font-size: 16px; }
+      [data-theme="light"] .theme-toggle::before { content: "☀️"; }
+      .main-content { display: grid; grid-template-columns: 1fr 360px; gap: 32px; animation: slideIn 0.6s ease-out 0.2s both; }
+      @keyframes slideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+      .content-area, .sidebar { background: var(--glass); backdrop-filter: blur(20px) saturate(180%); border-radius: var(--radius-xl); border: 1px solid var(--glass-border); box-shadow: var(--shadow); }
+      .content-area { padding: 40px; position: relative; overflow: hidden; }
+      .sidebar { height: fit-content; position: sticky; top: 24px; padding: 32px; }
+      .section-title { font-size: 32px; font-weight: 800; margin-bottom: 32px; background: linear-gradient(135deg, var(--white), var(--gray-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; position: relative; z-index: 1; }
+      .card { background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; border: 1px solid var(--glass-border); transition: var(--transition); position: relative; overflow: hidden; }
+      [data-theme="light"] .card { background: rgba(0, 0, 0, 0.03); }
+      .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); background: rgba(255, 255, 255, 0.05); border-color: rgba(99, 102, 241, 0.2); }
+      [data-theme="light"] .card:hover { background: rgba(0, 0, 0, 0.05); }
+      .card h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--white); }
+      .card p { color: var(--gray-light); margin-bottom: 20px; }
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 32px; }
+      .stat-card { text-align: center; padding: 32px 24px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05)); }
+      .stat-number { font-size: 48px; font-weight: 900; margin: 16px 0; background: linear-gradient(135deg, var(--white), var(--gray-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; transition: var(--transition); }
+      .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; color: var(--gray-light); }
+      .button { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 12px 24px; border-radius: var(--radius); cursor: pointer; font-size: 14px; font-weight: 600; transition: var(--transition); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+      .button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+      .button-secondary { background: var(--glass); border: 1px solid var(--glass-border); color: var(--white); }
+      .button-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(99, 102, 241, 0.3); }
+      [data-theme="light"] .button-secondary:hover { background: rgba(0, 0, 0, 0.1); }
+      .button-danger { background: linear-gradient(135deg, var(--danger), #dc2626); box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+      .risk-badge { padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; vertical-align: middle; margin-left: 8px;}
+      .high-risk { background: linear-gradient(135deg, var(--danger), #dc2626); box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); } }
+      .medium-risk { background: linear-gradient(135deg, var(--warning), #d97706); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+      .low-risk { background: linear-gradient(135deg, var(--success), #059669); box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+      .student-item, .alert-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-radius: var(--radius); margin-bottom: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); transition: var(--transition); }
+      .student-item:hover, .alert-item:hover { background: rgba(255, 255, 255, 0.05); transform: translateX(4px); border-color: rgba(99, 102, 241, 0.2); }
+      .student-info, .alert-info { flex: 1; }
+      .student-name, .alert-title { font-weight: 600; margin-bottom: 4px; color: var(--white); }
+      .student-details, .alert-message { font-size: 13px; color: var(--gray-light); }
+      .student-risk { display: flex; align-items: center; gap: 12px; margin: 0 20px; }
+      .risk-score { font-size: 13px; color: var(--gray-light); }
+      .student-actions, .alert-actions { display: flex; gap: 8px; }
+      .form-group { margin-bottom: 20px; }
+      .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--gray-light); }
+      .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; background: var(--dark-lighter); border: 1px solid var(--glass-border); border-radius: var(--radius); color: var(--white); font-size: 14px; transition: var(--transition); font-family: 'Inter', sans-serif; }
+      .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+      .chart-container { height: 350px; padding: 20px; position: relative; }
+      .notification { position: fixed; bottom: 32px; right: 32px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 16px 24px; border-radius: var(--radius); box-shadow: var(--shadow-lg); opacity: 0; transform: translateY(100px); transition: var(--transition); z-index: 1000; max-width: 400px; backdrop-filter: blur(10px); }
+      .notification.show { opacity: 1; transform: translateY(0); }
+      .notification.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
+      .notification.success { background: linear-gradient(135deg, var(--success), #059669); }
+      .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--glass-border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .view { animation: fadeIn 0.5s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      input[type="file"] { width: 100%; padding: 12px; background: var(--dark-lighter); border: 1px solid var(--glass-border); border-radius: var(--radius); color: var(--white); font-size: 14px; cursor: pointer; }
+      input[type="file"]::-webkit-file-upload-button { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; margin-right: 12px; }
+      .intervention-item { background: var(--glass); padding: 16px; margin-bottom: 12px; border-radius: var(--radius); border-left: 4px solid var(--primary-light); }
+      .intervention-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+      .intervention-task { font-weight: 600; margin: 0; flex-grow: 1; }
+      .intervention-meta { font-size: 12px; color: var(--gray-light); margin: 4px 0 10px 0; }
+      .intervention-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 10px; }
+      @media (max-width: 1200px) { .main-content { grid-template-columns: 1fr; } .sidebar { position: relative; top: 0; } }
+      @media (max-width: 992px) { .profile-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 768px) { .container { padding: 16px; } .header-content { flex-direction: column; align-items: stretch; } }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <div class="header-content">
+          <div class="logo">Student Risk Analysis</div>
+          <nav class="nav">
+            <button class="nav-item active" data-view="dashboard">Dashboard</button>
+            <button class="nav-item" data-view="upload">Upload</button>
+            <button class="nav-item" data-view="analysis">Analysis</button>
+            <button class="nav-item" data-view="alerts">Alerts</button>
+            <button class="nav-item" data-view="students">Students</button>
+          </nav>
+          <button class="theme-toggle" id="themeToggle">Theme</button>
+        </div>
+      </header>
+      <div class="main-content">
+        <main class="content-area">
+          <div id="dashboard" class="view">
+            <h2 class="section-title">Dashboard Overview</h2>
+            <div class="stats-grid">
+              <div class="card stat-card"><div class="stat-label">Total Students</div><div class="stat-number" id="totalStudents">-</div></div>
+              <div class="card stat-card"><div class="stat-label">High Risk</div><div class="stat-number" id="highRisk">-</div></div>
+              <div class="card stat-card"><div class="stat-label">Medium Risk</div><div class="stat-number" id="mediumRisk">-</div></div>
+              <div class="card stat-card"><div class="stat-label">Active Alerts</div><div class="stat-number" id="activeAlerts">-</div></div>
+            </div>
+            <div class="card"><h3>Risk Distribution</h3><div class="chart-container"></div></div>
+            <div class="card model-performance">
+                <h3>Model Performance</h3>
+                <div class="performance-metrics" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center;">
+                    <div><span>Accuracy</span><span>-</span></div><div><span>Precision</span><span>-</span></div>
+                    <div><span>Recall</span><span>-</span></div><div><span>F1-Score</span><span>-</span></div>
+                </div>
+            </div>
+          </div>
+          <div id="upload" class="view" style="display: none"><h2 class="section-title">Data Upload</h2><div class="card"><h3>Upload Student Data</h3><p>Upload a CSV file containing student information.</p><input type="file" id="comprehensiveFile" accept=".csv" style="margin: 20px 0" /><button class="button" data-action="upload" data-file-input="comprehensiveFile">Upload and Process</button></div><div class="card"><h3>Upload Status</h3><div id="uploadStatus">No uploads.</div></div></div>
+          <div id="analysis" class="view" style="display: none"><h2 class="section-title">Risk Analysis Engine</h2><div class="card"><h3>Train ML Model</h3><p>Upload historical data with outcome labels.</p><input type="file" id="trainingFile" accept=".csv" style="margin: 20px 0" /><button class="button" data-action="train-model" data-file-input="trainingFile">Train Model</button><div id="trainingStatus" style="margin-top: 15px"></div></div><div class="card"><h3>Model Configuration (Rule-based)</h3><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;"><div class="form-group"><label for="attendanceWeight">Attendance (%)</label><input type="number" id="attendanceWeight" value="35" min="0" max="100" /></div><div class="form-group"><label for="academicWeight">Academics (%)</label><input type="number" id="academicWeight" value="40" min="0" max="100" /></div><div class="form-group"><label for="financialWeight">Fee Status (%)</label><input type="number" id="financialWeight" value="15" min="0" max="100" /></div><div class="form-group"><label for="backlogWeight">Backlogs (%)</label><input type="number" id="backlogWeight" value="10" min="0" max="100" /></div></div><button class="button" data-action="update-weights">Update Weights</button></div><div class="card"><h3>Analysis Controls</h3><div style="display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap;"><button class="button" data-action="execute-analysis">Execute Analysis</button><button class="button button-secondary" data-action="generate-report">Generate Report</button><button class="button button-danger" data-action="reset-db">Reset Database</button></div></div></div>
+          <div id="alerts" class="view" style="display: none"><h2 class="section-title">Alert Management</h2><div class="card"><h3>Active Alerts</h3><div id="alertsList">Loading alerts...</div></div></div>
+          <div id="students" class="view" style="display: none"><h2 class="section-title">Student Management</h2><div class="card"><h3>Search & Filter Students</h3><div style="display: grid; grid-template-columns: 1fr auto auto; gap: 15px; align-items: end; margin: 20px 0;"><div class="form-group" style="margin:0;"><label for="searchStudent">Search Students</label><input type="text" id="searchStudent" placeholder="Name or ID..." /></div><div class="form-group" style="margin:0;"><label for="filterRisk">Filter by Risk</label><select id="filterRisk"><option value="all">All</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select></div><button class="button" data-action="search-students">Search</button></div></div><div class="card"><h3>Student List</h3><div id="studentsList">Loading students...</div></div></div>
+          <div id="student-profile" class="view" style="display: none"></div>
+        </main>
+        <aside class="sidebar">
+          <h3 style="margin-bottom: 20px; color: var(--primary-light);">Quick Actions</h3>
+          <div class="card"><div style="display: flex; flex-direction: column; gap: 12px;"><button class="button" data-action="refresh-data">🔄 Refresh Data</button><button class="button button-secondary" data-action="generate-report">📄 Download Report</button></div></div>
+          <div class="card"><h4 style="margin-bottom: 15px;">System Status</h4><div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px;"><div style="display: flex; justify-content: space-between; align-items: center;"><span>Database</span><div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success);"></div></div><div style="display: flex; justify-content: space-between; align-items: center;"><span>ML Model</span><div id="mlModelStatus" style="width: 8px; height: 8px; background: var(--warning); border-radius: 50%; box-shadow: 0 0 8px var(--warning);"></div></div></div></div>
+          <div class="card"><h4 style="margin-bottom: 15px;">Recent Activity</h4><div id="recentActivityList" style="font-size: 13px; color: var(--gray-light);">Loading...</div></div>
+        </aside>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        class StudentRiskSystem {
+            constructor() {
+                this.baseURL = '/api';
+                this.currentView = 'dashboard';
+                this.riskChartInstance = null;
+                this.riskTrendChartInstance = null;
+                this.currentTheme = localStorage.getItem('theme') || 'dark';
+                this.init();
+            }
+
+            async init() {
+                this.applyTheme();
+                this.switchView('dashboard'); // Always start on dashboard
+                await this.loadDashboardData();
+                this.setupEventListeners();
+            }
+
+            applyTheme() { document.documentElement.setAttribute('data-theme', this.currentTheme); }
+            
+            setupEventListeners() {
+                document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+
+                document.addEventListener('click', async (e) => {
+                    const target = e.target.closest('button, .nav-item');
+                    if (!target) return;
+
+                    const action = target.dataset.action;
+                    const view = target.dataset.view;
+
+                    if (view) {
+                        this.switchView(view);
+                    }
+                    
+                    if (!action) return;
+                    e.preventDefault();
+                    
+                    const studentId = target.dataset.studentId;
+                    const fileInputId = target.dataset.fileInput;
+                    const alertId = target.dataset.alertId;
+
+                    switch (action) {
+                        case 'upload': 
+                        case 'train-model': 
+                            this.handleFileUpload(document.getElementById(fileInputId), action); 
+                            break;
+                        case 'execute-analysis': this.executeRiskAnalysis(); break;
+                        case 'update-weights': this.updateWeights(); break;
+                        case 'generate-report': this.generateComprehensiveReport(); break;
+                        case 'reset-db': if (confirm('Are you sure?')) this.resetDatabase(); break;
+                        case 'resolve-alert': this.resolveAlert(alertId); break;
+                        case 'search-students': this.searchStudents(); break;
+                        case 'view-details': this.showStudentProfile(studentId); break;
+                        case 'back-to-list': this.switchView('students'); break;
+                        case 'update-intervention': this.handleUpdateIntervention(target); break;
+                        case 'remove-intervention': if (confirm('Are you sure?')) this.handleRemoveIntervention(target); break;
+                        case 'run-what-if': this.handleWhatIfScenario(target); break;
+                        case 'ai-recommend': this.handleAiRecommendation(target); break;
+                        case 'ai-draft': this.handleAiDraft(target); break;
+                        case 'download-txt-report': this.handleDownloadTxtReport(studentId); break;
+                        case 'refresh-data': this.showNotification('Refreshing data...', 'info'); await this.loadDashboardData(); break;
+                    }
+                });
+
+                document.addEventListener('submit', e => {
+                    e.preventDefault();
+                    const studentId = e.target.dataset.studentId;
+                    if (e.target.id === 'comm-form') this.handleSendCommunication(e.target, studentId);
+                    if (e.target.id === 'add-intervention-form') this.handleAddIntervention(e.target, studentId);
+                });
+            }
+            
+            async fetchAPI(endpoint, options = {}) {
+                try {
+                    const headers = options.body instanceof FormData ? {} : { 'Content-Type': 'application/json', ...options.headers };
+                    const response = await fetch(this.baseURL + endpoint, { headers, ...options });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+                        throw new Error(errorData.error || `API request failed: ${response.statusText}`);
+                    }
+                    const contentType = response.headers.get("content-type");
+                    return contentType?.includes("application/json") ? response.json() : response.blob();
+                } catch (error) { console.error('API Error:', error); throw error; }
+            }
+
+            async loadDashboardData() {
+                try {
+                    const [stats, students, alerts, activity] = await Promise.all([ 
+                        this.fetchAPI('/dashboard'), this.fetchAPI('/students'), 
+                        this.fetchAPI('/alerts'), this.fetchAPI('/recent-activity') 
+                    ]);
+                    this.updateDashboardStats(stats);
+                    this.updateStudentList(students);
+                    this.updateAlerts(alerts);
+                    this.updateRecentActivity(activity);
+                } catch (e) { this.showNotification('Failed to load dashboard data. Please check the server and database.', 'error'); }
+            }
+            
+            updateDashboardStats(stats) {
+                document.getElementById('totalStudents').textContent = stats.total_students;
+                document.getElementById('highRisk').textContent = stats.risk_distribution.high;
+                document.getElementById('mediumRisk').textContent = stats.risk_distribution.medium;
+                document.getElementById('activeAlerts').textContent = stats.active_alerts;
+                const mlStatus = document.getElementById('mlModelStatus');
+                const isTrained = stats.model_performance && stats.model_performance.accuracy > 0;
+                mlStatus.style.background = isTrained ? 'var(--success)' : 'var(--warning)';
+                this.updateRiskChart(stats.risk_distribution);
+                this.updateModelPerformance(stats.model_performance);
+            }
+
+            updateRiskChart(riskData) {
+                const container = document.querySelector('#dashboard .chart-container');
+                if (this.riskChartInstance) this.riskChartInstance.destroy();
+                let canvas = container.querySelector('canvas');
+                if (!canvas) { canvas = document.createElement('canvas'); container.innerHTML = ''; container.appendChild(canvas); }
+                const style = getComputedStyle(document.documentElement);
+                const colors = [style.getPropertyValue('--danger').trim(), style.getPropertyValue('--warning').trim(), style.getPropertyValue('--success').trim()];
+                this.riskChartInstance = new Chart(canvas, { type: 'doughnut', data: { labels: ['High', 'Medium', 'Low'], datasets: [{ data: [riskData.high, riskData.medium, riskData.low], backgroundColor: colors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: style.getPropertyValue('--gray-light') } } } } });
+            }
+
+            updateModelPerformance(perf) {
+                const container = document.querySelector('.model-performance .performance-metrics');
+                const p = (v) => perf && v > 0 ? `${(v * 100).toFixed(1)}%` : 'N/A';
+                container.innerHTML = `<div><span>Accuracy</span><span>${p(perf.accuracy)}</span></div><div><span>Precision</span><span>${p(perf.precision)}</span></div><div><span>Recall</span><span>${p(perf.recall)}</span></div><div><span>F1-Score</span><span>${p(perf.f1_score)}</span></div>`;
+            }
+
+            updateStudentList(students) {
+                const list = document.getElementById('studentsList');
+                if (!list) return;
+                if (!students || students.length === 0) { list.innerHTML = '<p style="text-align:center;">No students found.</p>'; return; }
+                list.innerHTML = students.map(s => `<div class="student-item"><div class="student-info"><div class="student-name">${this.escape(s.name)} (${this.escape(s.student_id)})</div><div class="student-details">${this.escape(s.grade||'N/A')} - ${this.escape(s.section||'N/A')}</div></div><div class="student-risk"><span class="risk-badge ${s.risk_level.toLowerCase()}-risk">${s.risk_level}</span></div><div class="student-actions"><button class="button" data-action="view-details" data-student-id="${s.student_id}">View Details</button></div></div>`).join('');
+            }
+
+            updateAlerts(alerts) {
+                const list = document.getElementById('alertsList');
+                if(!list) return;
+                if (!alerts || alerts.length === 0) { list.innerHTML = '<p style="text-align:center;">No active alerts.</p>'; return; }
+                list.innerHTML = alerts.map(a => `<div class="alert-item" id="alert-${a.id}"><div class="alert-info"><div class="alert-title">${a.alert_type.replace('_',' ')} for ${this.escape(a.student_name)}</div><div>${this.escape(a.message)}</div></div><div class="alert-actions"><button class="button" data-action="resolve-alert" data-alert-id="${a.id}">Resolve</button></div></div>`).join('');
+            }
+
+            updateRecentActivity(activities) {
+                const list = document.getElementById('recentActivityList');
+                if(!list) return;
+                if (!activities || activities.length === 0) { list.innerHTML = 'No recent activity.'; return; }
+                list.innerHTML = activities.map(a => `<div style="padding-bottom: 5px; margin-bottom: 5px; border-bottom: 1px solid var(--glass-border);"><strong>${a.activity_type.replace(/_/g,' ')}</strong>: ${this.escape(a.description)}</div>`).join('');
+            }
+
+            async handleFileUpload(fileInput, type) {
+                if (!fileInput || !fileInput.files.length) return this.showNotification('Please select a file.', 'error');
+                const formData = new FormData(); 
+                formData.append('file', fileInput.files[0]);
+                const endpoint = type === 'upload' ? '/upload' : '/train-model';
+                try {
+                    const r = await this.fetchAPI(endpoint, { method: 'POST', body: formData });
+                    this.showNotification(r.message || `Model trained with ${(r.accuracy*100).toFixed(1)}% accuracy.`, 'success');
+                    this.loadDashboardData();
+                    fileInput.value = '';
+                } catch (e) { this.showNotification(e.message, 'error'); }
+            }
+            
+            async executeRiskAnalysis() { try { const r = await this.fetchAPI('/analyze', {method: 'POST'}); this.showNotification(r.message, 'success'); this.loadDashboardData(); } catch (e) { this.showNotification(e.message, 'error'); } }
+            async resetDatabase() { try { const r = await this.fetchAPI('/reset_db', {method: 'POST'}); this.showNotification(r.message, 'success'); setTimeout(() => window.location.reload(), 1500); } catch (e) { this.showNotification(e.message, 'error'); } }
+            async resolveAlert(id) { try { await this.fetchAPI(`/alert/resolve/${id}`, {method:'POST'}); this.showNotification('Alert resolved.', 'success'); document.getElementById(`alert-${id}`)?.remove(); this.loadDashboardData(); } catch (e) { this.showNotification(e.message, 'error'); } }
+            async searchStudents() { const s=document.getElementById('searchStudent').value, r=document.getElementById('filterRisk').value; try { const d = await this.fetchAPI(`/students?search=${s}&risk=${r}`); this.updateStudentList(d); } catch (e) { this.showNotification(e.message, 'error'); } }
+            
+            async generateComprehensiveReport() {
+                this.showNotification('Generating report...', 'info');
+                try {
+                    const blob = await this.fetchAPI('/report/comprehensive');
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'student_risk_report.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    this.showNotification('Report downloaded successfully!', 'success');
+                } catch (e) {
+                    this.showNotification(`Failed to generate report: ${e.message}`, 'error');
+                }
+            }
+
+            async handleDownloadTxtReport(studentId) {
+                this.showNotification('Generating TXT report...', 'info');
+                try {
+                    const blob = await this.fetchAPI(`/student/${studentId}/report/txt`);
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `student-report-${studentId}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } catch (e) {
+                    this.showNotification(`Failed to download report: ${e.message}`, 'error');
+                }
+            }
+            
+            async updateWeights() {
+                const weights = {
+                    attendance: document.getElementById('attendanceWeight').value, academic: document.getElementById('academicWeight').value,
+                    financial: document.getElementById('financialWeight').value, backlogs: document.getElementById('backlogWeight').value
+                };
+                try {
+                    const response = await this.fetchAPI('/weights', { method: 'POST', body: JSON.stringify(weights) });
+                    this.showNotification(response.message, 'success');
+                } catch (error) { this.showNotification(error.message, 'error'); }
+            }
+
+            async showStudentProfile(studentId) {
+                try {
+                    const [profile, forecast] = await Promise.all([
+                        this.fetchAPI(`/student/${studentId}`),
+                        this.fetchAPI(`/student/${studentId}/forecast`)
+                    ]);
+                    
+                    const container = document.getElementById('student-profile');
+                    container.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <h2 class="section-title" style="margin: 0;">Profile: ${this.escape(profile.name)}<span class="risk-badge ${profile.risk_level.toLowerCase()}-risk">${profile.risk_level}</span></h2>
+                            <div>
+                                <button class="button button-secondary" data-action="back-to-list">Back</button>
+                                <button class="button" data-action="download-txt-report" data-student-id="${profile.student_id}" style="margin-left: 10px;">Download .txt</button>
+                            </div>
+                        </div>
+                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                            <div class="card stat-card"><div class="stat-label">Risk Score</div><div class="stat-number">${(profile.risk_score * 100).toFixed(0)}%</div></div>
+                            <div class="card stat-card"><div class="stat-label">Attendance</div><div class="stat-number">${profile.attendance_percentage}%</div></div>
+                            <div class="card stat-card"><div class="stat-label">Avg Grade</div><div class="stat-number">${profile.average_grade}</div></div>
+                            <div class="card stat-card"><div class="stat-label">Backlogs</div><div class="stat-number">${profile.backlogs}</div></div>
+                        </div>
+                        <div class="profile-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: flex-start;">
+                            <div>
+                                <div class="card"><h3>Risk Score Trend & Forecast</h3><div id="riskTrendChartContainer" style="height: 300px;"></div></div>
+                                <div class="card"><h3>Intervention Case Management</h3><div id="interventionTrackerContainer"></div></div>
+                            </div>
+                            <div>
+                                <div class="card">
+                                    <h3>Send Communication</h3>
+                                    <form id="comm-form" data-student-id="${profile.student_id}">
+                                        <div class="form-group"><label>Type</label><select name="type"><option value="email">Email</option><option value="sms">SMS</option></select></div>
+                                        <div class="form-group"><label>Recipient</label><input type="text" name="recipient" value="${this.escape(profile.email || '')}"></div>
+                                        <div class="form-group"><label>Message</label><textarea name="message" rows="3"></textarea></div>
+                                        <button type="submit" class="button">Send</button>
+                                    </form>
+                                </div>
+                                <div class="card">
+                                    <h3>🔮 What-If Scenario Simulator</h3>
+                                    <div id="what-if-form" data-student-id="${studentId}">
+                                        <div class="form-group" style="margin-bottom: 10px;"><label style="font-size: 13px;">New Attendance %</label><input type="number" name="attendance_percentage" class="form-control" placeholder="${profile.attendance_percentage}"></div>
+                                        <div class="form-group" style="margin-bottom: 10px;"><label style="font-size: 13px;">New Average Grade</label><input type="number" name="average_grade" class="form-control" placeholder="${profile.average_grade}"></div>
+                                        <div class="form-group" style="margin-bottom: 10px;"><label style="font-size: 13px;">New Backlogs</label><input type="number" name="backlogs" class="form-control" placeholder="${profile.backlogs}"></div>
+                                        <div class="form-group" style="margin-bottom: 10px;"><label style="font-size: 13px;">New Fee Status</label>
+                                            <select name="fee_status" style="width:100%;">
+                                                <option value="" disabled selected>(current: ${this.escape(profile.fee_status)})</option>
+                                                <option value="paid">Paid</option>
+                                                <option value="unpaid">Unpaid</option>
+                                            </select>
+                                        </div>
+                                        <button class="button" data-action="run-what-if" data-student-id="${studentId}">Simulate</button>
+                                        <div id="what-if-result" style="margin-top: 15px; font-weight: 600;"></div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <h3>✨ AI Assistant</h3>
+                                    <div id="ai-assistant-form" data-student-id="${studentId}">
+                                        <button class="button button-secondary" data-action="ai-recommend" data-student-id="${studentId}" style="width: 100%; margin-bottom: 20px;">Suggest Intervention</button>
+                                        <div class="form-group">
+                                            <label>Communication Draft</label>
+                                            <select name="ai_context" style="width: 100%;">
+                                                <option value="Low Attendance">Parent SMS for Low Attendance</option>
+                                                <option value="Poor Grades">Parent SMS for Poor Grades</option>
+                                            </select>
+                                        </div>
+                                        <button class="button" data-action="ai-draft" data-student-id="${studentId}" style="width: 100%;">Generate Draft</button>
+                                        <textarea id="ai-draft-output" readonly placeholder="AI generated draft will appear here..." style="width: 100%; margin-top: 15px; height: 120px;"></textarea>
+                                    </div>
+                                </div>
+                                </div>
+                        </div>`;
+                    
+                    this.renderTrendChart(profile.risk_history, forecast.forecast, container.querySelector('#riskTrendChartContainer'));
+                    this.renderInterventionTracker(profile.interventions, profile.student_id, container.querySelector('#interventionTrackerContainer'));
+                    this.switchView('student-profile');
+                } catch (e) { this.showNotification(`Failed to load profile: ${e.message}`, 'error'); this.switchView('students'); }
+            }
+
+            renderTrendChart(history, forecast, container) {
+                if (this.riskTrendChartInstance) this.riskTrendChartInstance.destroy();
+                if (!history || history.length < 1) { container.innerHTML = `<p style="text-align:center;">Not enough data for a trend chart.</p>`; return; }
+                const reversed = history.slice().reverse();
+                const labels = reversed.map(d => new Date(d.analysis_date).toLocaleDateString());
+                const data = reversed.map(d => d.risk_score * 100);
+                const forecastLabels = forecast.map(d => new Date(d.date).toLocaleDateString());
+                const forecastData = forecast.map(d => d.score * 100);
+                const style = getComputedStyle(document.documentElement);
+                const primaryColor = style.getPropertyValue('--primary').trim();
+                const warningColor = style.getPropertyValue('--warning').trim();
+                let canvas = container.querySelector('canvas');
+                if (!canvas) { canvas = document.createElement('canvas'); container.innerHTML = ''; container.appendChild(canvas); }
+                this.riskTrendChartInstance = new Chart(canvas, { type: 'line', data: { labels: labels.concat(forecastLabels), datasets: [{ label: 'Risk Score %', data, borderColor: primaryColor, fill: false, tension: 0.3 }, { label: 'Forecast', data: new Array(data.length).fill(null).concat(forecastData), borderColor: warningColor, borderDash: [5, 5], fill: false, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } });
+            }
+            
+            renderInterventionTracker(interventions, studentId, container) {
+                const statuses = ['To Do', 'In Progress', 'Completed'];
+                const itemsHTML = interventions.map(item => `
+                    <div class="intervention-item" data-id="${item.id}">
+                        <div class="intervention-header">
+                            <p class="intervention-task">${this.escape(item.task)}</p>
+                            <select class="intervention-status-select">
+                                ${statuses.map(s => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                            </select>
+                        </div>
+                        <p class="intervention-meta">Assigned to: ${this.escape(item.assigned_to || 'N/A')} | Due: ${item.due_date ? new Date(item.due_date).toLocaleDateString() : 'N/A'}</p>
+                        <textarea class="intervention-notes" placeholder="Add notes...">${this.escape(item.notes)}</textarea>
+                        <div class="intervention-footer">
+                            <button class="button button-secondary" data-action="update-intervention" data-id="${item.id}" data-student-id="${studentId}" style="padding: 5px 10px; font-size: 12px;">Save Notes</button>
+                            <button class="button button-danger" data-action="remove-intervention" data-id="${item.id}" data-student-id="${studentId}" style="padding: 5px 10px; font-size: 12px; margin-left: 8px;">Remove</button>
+                        </div>
+                    </div>`).join('');
+                container.innerHTML = `<div id="intervention-list">${itemsHTML.length > 0 ? itemsHTML : '<p>No interventions logged.</p>'}</div>
+                    <form id="add-intervention-form" data-student-id="${studentId}" style="margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                        <h4>Add New Intervention</h4>
+                        <div class="form-group"><label>Task Description</label><input type="text" name="task" required></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group"><label>Assign To</label><input type="text" name="assigned_to"></div>
+                            <div class="form-group"><label>Due Date</label><input type="date" name="due_date"></div>
+                        </div>
+                        <button type="submit" class="button">Add Task</button>
+                    </form>`;
+            }
+
+            async handleAddIntervention(form, studentId) {
+                const data = { task: form.task.value, assigned_to: form.assigned_to.value, due_date: form.due_date.value };
+                if (!data.task) return this.showNotification('Task description cannot be empty.', 'error');
+                try {
+                    await this.fetchAPI(`/student/${studentId}/interventions`, { method: 'POST', body: JSON.stringify(data) });
+                    this.showNotification('Intervention added.', 'success');
+                    this.showStudentProfile(studentId);
+                } catch (e) { this.showNotification(`Error: ${e.message}`, 'error'); }
+            }
+
+            async handleUpdateIntervention(button) {
+                const item = button.closest('.intervention-item');
+                const studentId = button.dataset.studentId;
+                const data = { status: item.querySelector('.intervention-status-select').value, notes: item.querySelector('.intervention-notes').value };
+                try {
+                    await this.fetchAPI(`/interventions/${button.dataset.id}`, { method: 'PUT', body: JSON.stringify(data) });
+                    this.showNotification('Intervention updated.', 'success');
+                } catch (e) { this.showNotification(`Error: ${e.message}`, 'error'); }
+            }
+
+            async handleRemoveIntervention(button) {
+                const interventionId = button.dataset.id;
+                const studentId = button.dataset.studentId;
+                try {
+                    await this.fetchAPI(`/interventions/${interventionId}`, { method: 'DELETE' });
+                    this.showNotification('Intervention task removed.', 'success');
+                    this.showStudentProfile(studentId);
+                } catch (e) { this.showNotification(`Error removing task: ${e.message}`, 'error'); }
+            }
+
+            async handleSendCommunication(form, studentId) {
+                const data = { 
+                    student_id: studentId, 
+                    type: form.type.value, 
+                    recipient: form.recipient.value, 
+                    message: form.message.value 
+                };
+                if (!data.recipient || !data.message) {
+                    return this.showNotification('Recipient and message are required.', 'error');
+                }
+                try {
+                    const response = await this.fetchAPI('/communicate', { method: 'POST', body: JSON.stringify(data) });
+                    this.showNotification(response.message, 'success');
+                    this.showStudentProfile(studentId);
+                } catch (e) { 
+                    this.showNotification(`Failed to send: ${e.message}`, 'error'); 
+                }
+            }
+
+            async handleWhatIfScenario(button) {
+                const studentId = button.dataset.studentId;
+                const form = document.getElementById('what-if-form');
+                const resultContainer = document.getElementById('what-if-result');
+                
+                const data = { 
+                    attendance_percentage: form.querySelector('[name=attendance_percentage]').value, 
+                    average_grade: form.querySelector('[name=average_grade]').value,
+                    backlogs: form.querySelector('[name=backlogs]').value,
+                    fee_status: form.querySelector('[name=fee_status]').value
+                };
+
+                resultContainer.innerHTML = `<span class="loading"></span> Simulating...`;
+                try {
+                    const result = await this.fetchAPI(`/student/${studentId}/what-if`, { method: 'POST', body: JSON.stringify(data) });
+                    const newScore = (result.hypothetical_risk_score * 100).toFixed(0);
+                    resultContainer.innerHTML = `Hypothetical Score: <span style="color: var(--primary-light);">${newScore}%</span> (${result.hypothetical_risk_level})`;
+                } catch (e) { resultContainer.innerHTML = `Error: ${e.message}`; }
+            }
+            
+            async handleAiRecommendation(button) {
+                const studentId = button.dataset.studentId;
+                this.showNotification('✨ Asking AI for recommendations...', 'info');
+                try {
+                    const result = await this.fetchAPI(`/student/${studentId}/ai-recommendation`, { method: 'POST' });
+                    const recommendation = result.recommendations[0];
+                    if (recommendation) {
+                        const form = document.getElementById('add-intervention-form');
+                        form.querySelector('[name=task]').value = recommendation.task;
+                        this.showNotification('AI recommendation has been pre-filled below.', 'success');
+                    }
+                } catch (e) { this.showNotification(`AI recommendation failed: ${e.message}`, 'error'); }
+            }
+
+            async handleAiDraft(button) {
+                const studentId = button.dataset.studentId;
+                const form = button.closest('#ai-assistant-form');
+                const context = form.querySelector('[name=ai_context]').value;
+                const outputTextarea = document.getElementById('ai-draft-output');
+                outputTextarea.value = "Generating...";
+                this.showNotification('🤖 Generating AI draft...', 'info');
+                try {
+                    const result = await this.fetchAPI(`/student/${studentId}/ai-draft`, { method: 'POST', body: JSON.stringify({ context }) });
+                    outputTextarea.value = result.draft;
+                    this.showNotification('Draft generated successfully.', 'success');
+                } catch (e) { outputTextarea.value = `Error: ${e.message}`; }
+            }
+            
+            escape(text) { const d = document.createElement('div'); d.textContent = text ?? ''; return d.innerHTML; }
+            toggleTheme() { this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', this.currentTheme); this.applyTheme(); this.loadDashboardData(); }
+            switchView(viewName) { document.querySelectorAll('.view').forEach(v => v.style.display = 'none'); document.getElementById(viewName).style.display = 'block'; this.currentView = viewName; document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === viewName)); }
+            showNotification(message, type = 'info') { const n = document.createElement('div'); n.className = `notification ${type} show`; n.textContent = message; document.body.appendChild(n); setTimeout(() => { n.classList.remove('show'); setTimeout(() => n.remove(), 500); }, 4000); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { new StudentRiskSystem(); });
+    </script>
+  </body>
+</html>
